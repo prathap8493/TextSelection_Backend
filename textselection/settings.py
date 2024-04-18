@@ -90,11 +90,11 @@ WSGI_APPLICATION = 'textselection.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'textselection',
-        'USER': 'textselection_user',
-        'PASSWORD': 'OgExmunDaHUHHbQJzcHkVpAijjIk9Knu',
-        'HOST': 'dpg-cog0f7779t8c73cd0bi0-a',  
-        'PORT': '5432'
+        # 'NAME': 'textselection',
+        # 'USER': 'textselection_user',
+        # 'PASSWORD': 'OgExmunDaHUHHbQJzcHkVpAijjIk9Knu',
+        # 'HOST': 'dpg-cog0f7779t8c73cd0bi0-a',  
+        # 'PORT': '5432'
     }
 }
 
