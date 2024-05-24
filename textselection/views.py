@@ -2,6 +2,10 @@ from rest_framework.views import APIView
 from django.http import JsonResponse
 from textselection.openai_helper import OpenAIHelper
 import os
+import requests
+import openai
+import json
+
 
 class TextModifier(APIView):
     def post(self, request):
@@ -76,5 +80,60 @@ class RephraseTextView(APIView):
         else:
             return JsonResponse({'status': 'failure', 'message': 'Response generation failed'}, status=400)
 
+class ValidateTextView(APIView):
+    def post(self, request):
+        original_text = request.data.get('text', '')
+        print(original_text)
+        if not original_text:
+            return JsonResponse({'status': 'failure', 'message': 'No text provided'}, status=400)
+
+        # Define the new prompt for analyzing the text
+        new_prompt = (
+            "Process the following text by splitting it based on newlines. "
+            "For each sentence, identify any grammatical errors. If an error is found, correct the sentence, "
+            "note the grammatical rule that was violated, and provide this information. "
+            "Additionally, for each error, provide an example demonstrating the incorrect and correct usage. "
+            "Output the data in a JSON format, where each entry contains the 'original' sentence, "
+            "'corrected' sentence, 'rule' violated, and an 'example' object with 'incorrect' and 'correct' fields. "
+            "Only include sentences that have errors."
+            f"Text to analyze:\\n{original_text}"
+        )
 
 
+
+        openai_key = os.getenv('OPENAI_API_KEY')
+        analysis = OpenAIHelper.analyze_text(openai_key, new_prompt)
+
+        if analysis:
+            # Convert string representation of list of dicts to actual JSON
+            try:
+                analysis_json = json.loads(analysis)
+                return JsonResponse({'status': 'success', 'data': {'analysis': analysis_json}})
+            except json.JSONDecodeError:
+                return JsonResponse({'status': 'failure', 'message': 'Error in parsing analysis result'}, status=500)
+        else:
+            return JsonResponse({'status': 'failure', 'message': 'Error analyzing text'}, status=500)
+
+
+
+
+
+
+
+class GrammarCheckView(APIView):
+    def post(self, request):
+        text = request.data.get('text', '')
+        url = "https://api.languagetool.org/v2/check"
+        data = {
+            'text': text,
+            'language': 'en-US'
+        }
+        headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+        response = requests.post(url, data=data, headers=headers)
+        
+        if response.status_code == 200:
+            results = response.json()
+            errors = [{'message': match['message'], 'offset': match['offset'], 'length': match['length']} for match in results.get('matches', [])]
+            return JsonResponse({'correctedText': text, 'errors': errors})
+        else:
+            return JsonResponse({'error': 'Failed to process the text'})
